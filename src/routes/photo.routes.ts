@@ -1,10 +1,11 @@
 import { Router } from "express";
-import status from "http-status";
+import { PhotoController } from "../controllers/photo.controller.js";
+import multer from "multer";
 
 const router = Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
-router.get("/hello", (req, res) => {
-  res.status(status.OK).json({ message: "Hello, World!" });
-});
+router.get("/", PhotoController.getPhotos);
+router.post("/create", upload.single("image"), PhotoController.create);
 
 export default router;

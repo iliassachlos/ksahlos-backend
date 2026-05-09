@@ -1,18 +1,31 @@
-import express from "express";
-import photosRouter from "./routes/photo.routes.js";
 import "dotenv/config";
-import { PORT } from "./config/globals.js";
+import express from "express";
+import cors from "cors";
+import photosRouter from "./routes/photo.routes.js";
 import { connectToMongo } from "./config/mongo.js";
+import helmet from "helmet";
+import { errorHandler } from "./middleware/error.middleware.js";
+import { connectToCloudinary } from "./config/cloudinary.js";
+
+const PORT = process.env.PORT || "8080";
+const ALLOWED_ORIGINS = (
+  process.env.ALLOWED_ORIGINS || "http://localhost:3000"
+).split(",");
 
 const app = express();
 
+app.use(helmet());
+app.use(cors({ origin: ALLOWED_ORIGINS }));
 app.use(express.json());
 
 app.use("/api/photos", photosRouter);
 
+app.use(errorHandler);
+
 const startServer = async () => {
   try {
     await connectToMongo();
+    connectToCloudinary();
 
     app.listen(PORT, () => {
       console.log("Server is running on port " + PORT);
