@@ -18,6 +18,14 @@ export interface CreatePhotoRequest {
   visibility: boolean;
 }
 
+export interface UpdatePhotoRequest {
+  title?: string;
+  description?: string;
+  category?: string;
+  number?: number;
+  visibility?: boolean;
+}
+
 export interface PhotoQuery {
   category?: string;
   visibility?: boolean;

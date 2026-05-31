@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
-import { createPhoto, fetchPhotos } from "../services/photo.service.js";
+import { createPhoto, fetchPhotos, updatePhoto, deletePhoto } from "../services/photo.service.js";
 import status from "http-status";
-import type { CreatePhotoRequest, PhotoQuery } from "../types/photo.types.js";
+import type { CreatePhotoRequest, UpdatePhotoRequest, PhotoQuery } from "../types/photo.types.js";
 
 export const PhotoController = {
   getPhotos: async (req: Request, res: Response, next: NextFunction) => {
@@ -29,6 +29,31 @@ export const PhotoController = {
       const newPhoto = await createPhoto(request, file.buffer);
 
       return res.status(status.CREATED).json({ data: newPhoto });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  update: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = req.params.id as string;
+      const request = req.body as UpdatePhotoRequest;
+
+      const updated = await updatePhoto(id, request);
+
+      return res.status(status.OK).json({ data: updated });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  delete: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = req.params.id as string;
+
+      await deletePhoto(id);
+
+      return res.status(status.NO_CONTENT).send();
     } catch (error) {
       next(error);
     }

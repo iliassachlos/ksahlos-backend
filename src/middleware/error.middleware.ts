@@ -1,14 +1,17 @@
 import type { Request, Response, NextFunction } from "express";
-import status from "http-status";
+import { AppError } from "../utils/app-error.js";
 
 export const errorHandler = (
   err: Error,
-  req: Request,
+  _req: Request,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ) => {
   console.error(err.message);
-  return res
-    .status(status.INTERNAL_SERVER_ERROR)
-    .json({ error: err.message || "Something went wrong" });
+
+  if (err instanceof AppError) {
+    return res.status(err.statusCode).json({ error: err.message });
+  }
+
+  return res.status(500).json({ error: "Something went wrong" });
 };

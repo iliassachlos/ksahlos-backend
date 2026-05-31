@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { Admin } from "../models/admin.model.js";
 import jwt from "jsonwebtoken";
+import { AppError } from "../utils/app-error.js";
 
 export const login = async (
   username: string,
@@ -9,13 +10,13 @@ export const login = async (
   const admin = await Admin.findOne({ username });
 
   if (!admin) {
-    throw new Error("Invalid username or password");
+    throw new AppError("Invalid username or password", 401);
   }
 
   const isPasswordValid = await bcrypt.compare(password, admin.password);
 
   if (!isPasswordValid) {
-    throw new Error("Invalid username or password");
+    throw new AppError("Invalid username or password", 401);
   }
 
   const token = jwt.sign(
