@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import photosRouter from "./routes/photo.routes.js";
+import authRouter from "./routes/auth.routes.js";
 import { connectToMongo } from "./config/mongo.js";
 import helmet from "helmet";
 import { errorHandler } from "./middleware/error.middleware.js";
@@ -19,6 +20,7 @@ app.use(cors({ origin: ALLOWED_ORIGINS }));
 app.use(express.json());
 
 app.use("/api/photos", photosRouter);
+app.use("/api/auth", authRouter);
 
 app.use(errorHandler);
 

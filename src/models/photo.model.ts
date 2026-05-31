@@ -10,7 +10,7 @@ export interface IPhoto extends Document {
   cloudinaryId: string;
 }
 
-const photoSchema = new Schema<IPhoto>(
+export const photoSchema = new Schema<IPhoto>(
   {
     title: {
       type: String,
