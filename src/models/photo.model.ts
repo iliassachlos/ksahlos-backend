@@ -1,11 +1,11 @@
-import { Document, model, Schema } from "mongoose";
+import { Document, model, Schema, Types } from "mongoose";
 
 export interface IPhoto extends Document {
   title: string;
   description: string;
   number: number;
   url: string;
-  category: string;
+  collectionId: Types.ObjectId;
   visibility: boolean;
   cloudinaryId: string;
 }
@@ -20,7 +20,7 @@ export const photoSchema = new Schema<IPhoto>(
 
     description: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
     },
 
@@ -30,11 +30,11 @@ export const photoSchema = new Schema<IPhoto>(
       trim: true,
     },
 
-    category: {
-      type: String,
+    collectionId: {
+      type: Schema.Types.ObjectId,
+      ref: "Collection",
       required: true,
-      trim: true,
-      lowercase: true,
+      index: true,
     },
 
     number: {

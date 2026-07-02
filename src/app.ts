@@ -3,6 +3,8 @@ import express from "express";
 import cors from "cors";
 import photosRouter from "./routes/photo.routes.js";
 import authRouter from "./routes/auth.routes.js";
+import awardsRouter from "./routes/award.routes.js";
+import collectionsRouter from "./routes/collection.routes.js";
 import { connectToMongo } from "./config/mongo.js";
 import helmet from "helmet";
 import { errorHandler } from "./middleware/error.middleware.js";
@@ -21,6 +23,8 @@ app.use(express.json());
 
 app.use("/api/photos", photosRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/awards", awardsRouter);
+app.use("/api/collections", collectionsRouter);
 
 app.use(errorHandler);
 

@@ -15,7 +15,14 @@ router.post(
   PhotoController.create,
 );
 
-router.patch("/:id", authenticate, PhotoController.update);
+router.patch("/rearrange", authenticate, PhotoController.rearrange);
+
+router.patch(
+  "/:id",
+  authenticate,
+  upload.single("image"),
+  PhotoController.update,
+);
 
 router.delete("/:id", authenticate, PhotoController.delete);
 
