@@ -1,7 +1,17 @@
 import type { Request, Response, NextFunction } from "express";
-import { createPhoto, fetchPhotos, updatePhoto, deletePhoto } from "../services/photo.service.js";
+import {
+  createPhoto,
+  fetchPhotos,
+  updatePhoto,
+  deletePhoto,
+  rearrangePhotos,
+} from "../services/photo.service.js";
 import status from "http-status";
-import type { CreatePhotoRequest, UpdatePhotoRequest, PhotoQuery } from "../types/photo.types.js";
+import type {
+  CreatePhotoRequest,
+  UpdatePhotoRequest,
+  PhotoQuery,
+} from "../types/photo.types.js";
 
 export const PhotoController = {
   getPhotos: async (req: Request, res: Response, next: NextFunction) => {
@@ -34,12 +44,17 @@ export const PhotoController = {
     }
   },
 
-  update: async (req: Request, res: Response, next: NextFunction) => {
+  update: async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<Response | void> => {
     try {
       const id = req.params.id as string;
       const request = req.body as UpdatePhotoRequest;
+      const file = req.file;
 
-      const updated = await updatePhoto(id, request);
+      const updated = await updatePhoto(id, request, file?.buffer);
 
       return res.status(status.OK).json({ data: updated });
     } catch (error) {
@@ -47,7 +62,27 @@ export const PhotoController = {
     }
   },
 
-  delete: async (req: Request, res: Response, next: NextFunction) => {
+  rearrange: async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<Response | void> => {
+    try {
+      const { orderedIds } = req.body as { orderedIds: string[] };
+
+      await rearrangePhotos(orderedIds);
+
+      return res.status(status.OK).json({ message: "Photos rearranged" });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  delete: async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<Response | void> => {
     try {
       const id = req.params.id as string;
 

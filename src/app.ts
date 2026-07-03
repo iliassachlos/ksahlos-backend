@@ -3,10 +3,13 @@ import express from "express";
 import cors from "cors";
 import photosRouter from "./routes/photo.routes.js";
 import authRouter from "./routes/auth.routes.js";
+import awardsRouter from "./routes/award.routes.js";
+import collectionsRouter from "./routes/collection.routes.js";
 import { connectToMongo } from "./config/mongo.js";
 import helmet from "helmet";
 import { errorHandler } from "./middleware/error.middleware.js";
 import { connectToCloudinary } from "./config/cloudinary.js";
+import { globalLimitter } from "./middleware/rate-limit.middleware.js";
 
 const PORT = process.env.PORT || "8080";
 const ALLOWED_ORIGINS = (
@@ -15,12 +18,17 @@ const ALLOWED_ORIGINS = (
 
 const app = express();
 
+app.set("trust proxy", 1);
+
+app.use(globalLimitter);
 app.use(helmet());
 app.use(cors({ origin: ALLOWED_ORIGINS }));
 app.use(express.json());
 
 app.use("/api/photos", photosRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/awards", awardsRouter);
+app.use("/api/collections", collectionsRouter);
 
 app.use(errorHandler);
 

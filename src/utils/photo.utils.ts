@@ -13,7 +13,7 @@ export const mapMongoosePhotoToDto = (photo: IPhoto): PhotoResponse => {
     title: photo.title,
     description: photo.description,
     url: photo.url,
-    category: photo.category,
+    collectionId: photo.collectionId.toString(),
     number: photo.number,
     visibility: photo.visibility,
     cloudinaryId: photo.cloudinaryId,

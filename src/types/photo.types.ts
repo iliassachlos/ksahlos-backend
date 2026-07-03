@@ -3,7 +3,7 @@ export interface PhotoResponse {
   title: string;
   description: string;
   url: string;
-  category: string;
+  collectionId: string;
   number: number;
   visibility: boolean;
   cloudinaryId: string;
@@ -12,21 +12,19 @@ export interface PhotoResponse {
 export interface CreatePhotoRequest {
   title: string;
   description: string;
-  url: string;
-  category: string;
-  number: number;
-  visibility: boolean;
+  collectionId: string;
 }
 
 export interface UpdatePhotoRequest {
   title?: string;
   description?: string;
-  category?: string;
+  collectionId?: string;
   number?: number;
   visibility?: boolean;
 }
 
 export interface PhotoQuery {
-  category?: string;
+  title?: string;
+  collection?: string;
   visibility?: boolean;
 }
