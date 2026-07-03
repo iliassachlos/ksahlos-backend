@@ -9,6 +9,7 @@ import { connectToMongo } from "./config/mongo.js";
 import helmet from "helmet";
 import { errorHandler } from "./middleware/error.middleware.js";
 import { connectToCloudinary } from "./config/cloudinary.js";
+import { globalLimitter } from "./middleware/rate-limit.middleware.js";
 
 const PORT = process.env.PORT || "8080";
 const ALLOWED_ORIGINS = (
@@ -17,6 +18,9 @@ const ALLOWED_ORIGINS = (
 
 const app = express();
 
+app.set("trust proxy", 1);
+
+app.use(globalLimitter);
 app.use(helmet());
 app.use(cors({ origin: ALLOWED_ORIGINS }));
 app.use(express.json());
