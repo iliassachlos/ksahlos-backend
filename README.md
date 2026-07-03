@@ -192,7 +192,7 @@ One workflow in `.github/workflows/docker.yml`:
 ## What I learned
 
 - Structuring an Express + TypeScript API with clean route → controller → service → model layering and centralized error handling
-- Handling multipart image uploads with Multer and offloading storage to Cloudinary instead of the server
+- Uploading images with Multer and storing them on Cloudinary
 - Securing write operations with JWT authentication middleware while keeping the read API public
 - Writing a multi-stage Dockerfile and automating image builds + Docker Hub publishing with GitHub Actions
 
