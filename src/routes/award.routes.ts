@@ -9,7 +9,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.get("/", AwardController.getAwards);
 
 router.post(
-  "/create",
+  "/",
   authenticate,
   upload.single("image"),
   AwardController.create,

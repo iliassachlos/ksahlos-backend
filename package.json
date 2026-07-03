@@ -7,8 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx watch src/app.ts",
     "build": "tsc",
-    "start": "node dist/app.js",
-    "migrate:collections": "tsx src/scripts/migrate-collections.ts"
+    "start": "node dist/app.js"
   },
   "repository": {
     "type": "git",

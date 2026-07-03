@@ -9,7 +9,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.get("/", PhotoController.getPhotos);
 
 router.post(
-  "/create",
+  "/",
   authenticate,
   upload.single("image"),
   PhotoController.create,
