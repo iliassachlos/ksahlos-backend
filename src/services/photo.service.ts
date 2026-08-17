@@ -8,6 +8,27 @@ import type {
 import { uploadImage, deleteImage } from "./cloudinary.service.js";
 import { AppError } from "../utils/app-error.js";
 
+const MAX_HERO_PHOTOS = 4;
+
+const toBoolean = (value: unknown): boolean | undefined => {
+  if (value === undefined) return undefined;
+  return value === true || value === "true";
+};
+
+const assertHeroLimit = async (excludeId?: string): Promise<void> => {
+  const filter: Record<string, unknown> = { hero: true };
+  if (excludeId) filter._id = { $ne: excludeId };
+
+  const heroCount = await Photo.countDocuments(filter);
+
+  if (heroCount >= MAX_HERO_PHOTOS) {
+    throw new AppError(
+      `Only ${MAX_HERO_PHOTOS} hero photos are allowed`,
+      400,
+    );
+  }
+};
+
 export const fetchPhotos = async (query: PhotoQuery): Promise<IPhoto[]> => {
   const filters: Record<string, unknown> = {};
 
@@ -30,6 +51,10 @@ export const fetchPhotos = async (query: PhotoQuery): Promise<IPhoto[]> => {
     filters.visibility = query.visibility;
   }
 
+  if (query.hero !== undefined) {
+    filters.hero = query.hero;
+  }
+
   const photos = await Photo.find(filters).sort({
     number: 1,
   });
@@ -45,6 +70,12 @@ export const createPhoto = async (
 
   if (!collection) throw new AppError("Collection not found", 404);
 
+  const hero = toBoolean(request.hero) ?? false;
+
+  if (hero) {
+    await assertHeroLimit();
+  }
+
   const { cloudinaryId, url } = await uploadImage(fileBuffer);
 
   const lastPhoto = await Photo.findOne().sort({ number: -1 });
@@ -56,6 +87,7 @@ export const createPhoto = async (
     url,
     number,
     visibility: true,
+    hero,
   });
 
   return newPhoto;
@@ -75,6 +107,17 @@ export const updatePhoto = async (
       _id: request.collectionId,
     });
     if (!collectionExists) throw new AppError("Collection not found", 404);
+  }
+
+  const nextHero = toBoolean(request.hero) ?? photo.hero;
+  const nextVisibility = toBoolean(request.visibility) ?? photo.visibility;
+
+  if (nextHero && !nextVisibility) {
+    throw new AppError("A hero photo must be visible", 400);
+  }
+
+  if (nextHero && !photo.hero) {
+    await assertHeroLimit(id);
   }
 
   const updates: Record<string, unknown> = { ...request };

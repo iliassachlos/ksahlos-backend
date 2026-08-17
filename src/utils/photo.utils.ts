@@ -16,6 +16,7 @@ export const mapMongoosePhotoToDto = (photo: IPhoto): PhotoResponse => {
     collectionId: photo.collectionId.toString(),
     number: photo.number,
     visibility: photo.visibility,
+    hero: photo.hero,
     cloudinaryId: photo.cloudinaryId,
   };
 };
