@@ -7,6 +7,7 @@ export interface IPhoto extends Document {
   url: string;
   collectionId: Types.ObjectId;
   visibility: boolean;
+  hero: boolean;
   cloudinaryId: string;
 }
 
@@ -45,6 +46,11 @@ export const photoSchema = new Schema<IPhoto>(
     visibility: {
       type: Boolean,
       required: true,
+    },
+
+    hero: {
+      type: Boolean,
+      default: false,
     },
 
     cloudinaryId: {
