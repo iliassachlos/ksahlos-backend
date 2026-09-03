@@ -1,6 +1,7 @@
 import type { Collection, Photo } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
 import { AppError } from "../utils/app-error.js";
+import { toBoolean } from "../utils/to-boolean.js";
 import { slugify } from "../utils/slugify.js";
 import type {
   CollectionQuery,
@@ -33,9 +34,6 @@ const generateUniqueSlug = async (
   return slug;
 };
 
-// Resolve the image to show for a collection: the admin-set cover, or a
-// fallback to the first photo in the collection (by number) so every
-// collection always has an image. Returns null if the collection has no photos.
 const resolveCoverPhoto = async (
   collectionId: string,
   coverPhotoId?: string | null,
@@ -57,7 +55,7 @@ export const fetchCollections = async (query: CollectionQuery) => {
   const collections = await prisma.collection.findMany({
     where: {
       ...(query.visibility !== undefined
-        ? { visibility: query.visibility }
+        ? { visibility: toBoolean(query.visibility) === true }
         : {}),
     },
     orderBy: { order: "asc" },
@@ -124,7 +122,7 @@ export const updateCollection = async (
   }
 
   if (payload.visibility !== undefined) {
-    data.visibility = payload.visibility;
+    data.visibility = toBoolean(payload.visibility) === true;
   }
 
   return prisma.collection.update({ where: { id }, data });

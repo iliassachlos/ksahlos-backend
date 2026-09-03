@@ -7,13 +7,9 @@ import type {
 } from "../types/photo.types.js";
 import { uploadImage, deleteImage } from "./cloudinary.service.js";
 import { AppError } from "../utils/app-error.js";
+import { toBoolean } from "../utils/to-boolean.js";
 
 const MAX_HERO_PHOTOS = 4;
-
-const toBoolean = (value: unknown): boolean | undefined => {
-  if (value === undefined) return undefined;
-  return value === true || value === "true";
-};
 
 const assertHeroLimit = async (excludeId?: string): Promise<void> => {
   const heroCount = await prisma.photo.count({
@@ -48,9 +44,9 @@ export const fetchPhotos = async (query: PhotoQuery): Promise<Photo[]> => {
       ...(query.title ? { title: { contains: query.title } } : {}),
       ...(collectionId ? { collectionId } : {}),
       ...(query.visibility !== undefined
-        ? { visibility: query.visibility }
+        ? { visibility: toBoolean(query.visibility) === true }
         : {}),
-      ...(query.hero !== undefined ? { hero: query.hero } : {}),
+      ...(query.hero !== undefined ? { hero: toBoolean(query.hero) === true } : {}),
     },
     orderBy: { number: "asc" },
   });
