@@ -1,5 +1,5 @@
-import { Photo, type IPhoto } from "../models/photo.model.js";
-import { Collection } from "../models/collection.model.js";
+import type { Photo } from "@prisma/client";
+import { prisma } from "../config/prisma.js";
 import type {
   CreatePhotoRequest,
   UpdatePhotoRequest,
@@ -16,57 +16,54 @@ const toBoolean = (value: unknown): boolean | undefined => {
 };
 
 const assertHeroLimit = async (excludeId?: string): Promise<void> => {
-  const filter: Record<string, unknown> = { hero: true };
-  if (excludeId) filter._id = { $ne: excludeId };
-
-  const heroCount = await Photo.countDocuments(filter);
+  const heroCount = await prisma.photo.count({
+    where: {
+      hero: true,
+      ...(excludeId ? { id: { not: excludeId } } : {}),
+    },
+  });
 
   if (heroCount >= MAX_HERO_PHOTOS) {
-    throw new AppError(
-      `Only ${MAX_HERO_PHOTOS} hero photos are allowed`,
-      400,
-    );
+    throw new AppError(`Only ${MAX_HERO_PHOTOS} hero photos are allowed`, 400);
   }
 };
 
-export const fetchPhotos = async (query: PhotoQuery): Promise<IPhoto[]> => {
-  const filters: Record<string, unknown> = {};
-
-  if (query.title) {
-    filters.title = { $regex: query.title, $options: "i" };
-  }
+export const fetchPhotos = async (query: PhotoQuery): Promise<Photo[]> => {
+  let collectionId: string | undefined;
 
   if (query.collection) {
-    const collection = await Collection.findOne({
-      slug: query.collection.toLowerCase(),
+    const collection = await prisma.collection.findUnique({
+      where: { slug: query.collection.toLowerCase() },
+      select: { id: true },
     });
 
     // Unknown collection slug -> no photos match.
     if (!collection) return [];
 
-    filters.collectionId = collection._id;
+    collectionId = collection.id;
   }
 
-  if (query.visibility !== undefined) {
-    filters.visibility = query.visibility;
-  }
-
-  if (query.hero !== undefined) {
-    filters.hero = query.hero;
-  }
-
-  const photos = await Photo.find(filters).sort({
-    number: 1,
+  return prisma.photo.findMany({
+    where: {
+      ...(query.title ? { title: { contains: query.title } } : {}),
+      ...(collectionId ? { collectionId } : {}),
+      ...(query.visibility !== undefined
+        ? { visibility: query.visibility }
+        : {}),
+      ...(query.hero !== undefined ? { hero: query.hero } : {}),
+    },
+    orderBy: { number: "asc" },
   });
-
-  return photos;
 };
 
 export const createPhoto = async (
   request: CreatePhotoRequest,
   fileBuffer: Buffer,
-): Promise<IPhoto> => {
-  const collection = await Collection.findById(request.collectionId);
+): Promise<Photo> => {
+  const collection = await prisma.collection.findUnique({
+    where: { id: request.collectionId },
+    select: { id: true },
+  });
 
   if (!collection) throw new AppError("Collection not found", 404);
 
@@ -78,33 +75,39 @@ export const createPhoto = async (
 
   const { cloudinaryId, url } = await uploadImage(fileBuffer);
 
-  const lastPhoto = await Photo.findOne().sort({ number: -1 });
+  const lastPhoto = await prisma.photo.findFirst({
+    orderBy: { number: "desc" },
+    select: { number: true },
+  });
   const number = lastPhoto ? lastPhoto.number + 1 : 1;
 
-  const newPhoto = await Photo.create({
-    ...request,
-    cloudinaryId,
-    url,
-    number,
-    visibility: true,
-    hero,
+  return prisma.photo.create({
+    data: {
+      title: request.title,
+      description: request.description ?? "",
+      collectionId: request.collectionId,
+      cloudinaryId,
+      url,
+      number,
+      visibility: true,
+      hero,
+    },
   });
-
-  return newPhoto;
 };
 
 export const updatePhoto = async (
   id: string,
   request: UpdatePhotoRequest,
   fileBuffer?: Buffer,
-): Promise<IPhoto> => {
-  const photo = await Photo.findById(id);
+): Promise<Photo> => {
+  const photo = await prisma.photo.findUnique({ where: { id } });
 
   if (!photo) throw new AppError("Photo not found", 404);
 
   if (request.collectionId) {
-    const collectionExists = await Collection.exists({
-      _id: request.collectionId,
+    const collectionExists = await prisma.collection.findUnique({
+      where: { id: request.collectionId },
+      select: { id: true },
     });
     if (!collectionExists) throw new AppError("Collection not found", 404);
   }
@@ -120,7 +123,19 @@ export const updatePhoto = async (
     await assertHeroLimit(id);
   }
 
-  const updates: Record<string, unknown> = { ...request };
+  const updates: Parameters<typeof prisma.photo.update>[0]["data"] = {
+    ...(request.title !== undefined ? { title: request.title } : {}),
+    ...(request.description !== undefined
+      ? { description: request.description }
+      : {}),
+    ...(request.collectionId !== undefined
+      ? { collectionId: request.collectionId }
+      : {}),
+    ...(request.hero !== undefined ? { hero: nextHero } : {}),
+    ...(request.visibility !== undefined
+      ? { visibility: nextVisibility }
+      : {}),
+  };
 
   if (fileBuffer && fileBuffer.length > 0) {
     const { cloudinaryId, url } = await uploadImage(fileBuffer);
@@ -129,36 +144,27 @@ export const updatePhoto = async (
     updates.url = url;
   }
 
-  const updated = await Photo.findByIdAndUpdate(id, updates, {
-    new: true,
-    runValidators: true,
-  });
-
-  return updated!;
+  return prisma.photo.update({ where: { id }, data: updates });
 };
 
-export const rearrangePhotos = async (
-  orderedIds: string[],
-): Promise<void> => {
+export const rearrangePhotos = async (orderedIds: string[]): Promise<void> => {
   if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
     throw new AppError("orderedIds must be a non-empty array", 400);
   }
 
-  const operations = orderedIds.map((id, index) => ({
-    updateOne: {
-      filter: { _id: id },
-      update: { $set: { number: index + 1 } },
-    },
-  }));
-
-  await Photo.bulkWrite(operations);
+  // One transaction so a partial failure cannot leave a broken ordering.
+  await prisma.$transaction(
+    orderedIds.map((id, index) =>
+      prisma.photo.update({ where: { id }, data: { number: index + 1 } }),
+    ),
+  );
 };
 
 export const deletePhoto = async (id: string): Promise<void> => {
-  const photo = await Photo.findById(id);
+  const photo = await prisma.photo.findUnique({ where: { id } });
 
   if (!photo) throw new AppError("Photo not found", 404);
 
   await deleteImage(photo.cloudinaryId);
-  await Photo.findByIdAndDelete(id);
+  await prisma.photo.delete({ where: { id } });
 };

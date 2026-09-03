@@ -41,5 +41,7 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true
-  }
+  },
+  // Build only the server sources; prisma.config.ts is a CLI-only file.
+  "include": ["src/**/*"]
 }

@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model Admin {
+  id       String @id @default(cuid())
+  username String @unique
+  password String
+
+  @@map("admins")
+}
+
+model Collection {
+  id         String   @id @default(cuid())
+  title      String
+  slug       String   @unique
+  order      Int      @default(0)
+  visibility Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  coverPhotoId String? @unique
+  coverPhoto   Photo?  @relation("CollectionCover", fields: [coverPhotoId], references: [id], onDelete: SetNull)
+
+  photos Photo[] @relation("CollectionPhotos")
+
+  @@map("collections")
+}
+
+model Photo {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @default("") @db.Text
+  url         String   @db.Text
+  number      Int
+  visibility  Boolean
+  hero        Boolean  @default(false)
+  cloudinaryId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  collectionId String
+  collection   Collection @relation("CollectionPhotos", fields: [collectionId], references: [id], onDelete: Restrict)
+
+  coverOf Collection? @relation("CollectionCover")
+
+  @@index([collectionId])
+  @@index([number])
+  @@map("photos")
+}
+
+model Award {
+  id           String   @id @default(cuid())
+  url          String   @db.Text
+  cloudinaryId String
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("awards")
+}
