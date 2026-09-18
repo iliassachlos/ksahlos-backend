@@ -13,7 +13,17 @@ import { globalLimitter } from "./middleware/rate-limit.middleware.js";
 import { legacyIdSerializer } from "./middleware/serialize.middleware.js";
 
 const PORT = process.env.PORT || "8080";
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "http://localhost:3000").split(",");
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "http://localhost:3000")
+  .split(",")
+  .map((origin) =>
+    origin
+      .trim()
+      .replace(/^["']|["']$/g, "")
+      .replace(/[/]$/, ""),
+  )
+  .filter(Boolean);
+
+console.info("Allowed origins:", ALLOWED_ORIGINS.join(", "));
 
 const app = express();
 
@@ -24,6 +34,13 @@ app.use(helmet());
 app.use(cors({ origin: ALLOWED_ORIGINS }));
 app.use(express.json());
 app.use(legacyIdSerializer);
+
+// Disable caching for all responses to prevent stale data issues
+app.use((_req, res, next) => {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+  res.set("X-Accel-Expires", "0");
+  next();
+});
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
