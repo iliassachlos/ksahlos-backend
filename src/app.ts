@@ -29,9 +29,9 @@ const app = express();
 
 app.set("trust proxy", 1);
 
-app.use(globalLimitter);
 app.use(helmet());
 app.use(cors({ origin: ALLOWED_ORIGINS }));
+app.use(globalLimitter);
 app.use(express.json());
 app.use(legacyIdSerializer);
 
